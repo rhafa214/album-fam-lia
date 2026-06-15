@@ -62,7 +62,7 @@ export function CollectionsView() {
           onClick={() => setSelectedAlbum(null)}
           className="my-8 text-[10px] font-sans font-bold uppercase tracking-widest text-ink-light hover:text-ink transition-colors"
         >
-          ← Voltar para Minhas Memórias
+          ← Voltar para Capítulos
         </button>
         {loadingPhotos ? (
           <div className="flex flex-col items-center justify-center py-32 space-y-4">
@@ -78,47 +78,55 @@ export function CollectionsView() {
 
   return (
     <div className="w-full max-w-5xl mx-auto px-6 py-12 md:px-12 flex flex-col">
-      <h2 className="text-4xl font-black tracking-tighter uppercase mb-6 font-serif text-ink">Minhas Memórias</h2>
-      <p className="text-sm font-sans uppercase tracking-[0.2em] font-semibold text-ink-light max-w-xl">
+      <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6 font-serif text-ink text-center">Capítulos</h2>
+      <p className="text-xs font-sans uppercase tracking-[0.2em] font-semibold text-ink-light max-w-xl mx-auto text-center">
         Cole links de pastas do Google Drive abaixo para guardar novos capítulos no seu álbum.
       </p>
 
-      <form onSubmit={handleAdd} className="flex gap-4 mb-16 relative mt-12">
+      <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-4 relative mt-12 w-full max-w-2xl mx-auto items-center mb-16">
         <input 
           type="url"
           required
           placeholder="Cole o link da pasta do Google Drive aqui..."
           value={newUrl}
           onChange={(e) => setNewUrl(e.target.value)}
-          className="flex-1 bg-transparent border-b-2 border-black/10 px-0 py-4 focus:outline-none focus:border-ocean transition-colors text-xs font-sans font-medium tracking-widest placeholder:text-ink-light text-ink"
+          className="flex-1 w-full bg-transparent border-b border-black/20 px-0 py-4 focus:outline-none focus:border-ink transition-colors text-xs font-sans font-medium tracking-widest placeholder:text-ink-light/50 text-ink text-center sm:text-left"
           disabled={adding}
         />
         <button 
           type="submit"
           disabled={adding || !newUrl}
-          className="px-8 bg-ink text-paper text-[10px] font-sans font-bold uppercase tracking-widest hover:bg-ink/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-8 py-4 bg-ink text-paper text-[10px] font-sans font-bold uppercase tracking-widest hover:bg-ink/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderPlus className="w-4 h-4" />}
-          Adicionar
+          Novo Capítulo
         </button>
-        {error && <div className="absolute -bottom-6 left-0 text-[10px] text-terracotta font-sans uppercase">{error}</div>}
+        {error && <div className="absolute -bottom-8 left-0 right-0 text-center text-[10px] text-terracotta font-sans uppercase tracking-widest">{error}</div>}
       </form>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {albums.map(album => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-16 mt-8 pb-24">
+        {albums.map((album, idx) => (
           <button 
             key={album.id}
             onClick={() => handleSelectAlbum(album)}
-            className="group flex flex-col text-left aspect-[4/3] bg-paper-dark border-4 border-white shadow-sm relative overflow-hidden transition-all duration-500 hover:shadow-xl hover:-translate-y-1"
+            className="group flex flex-col text-left transition-all duration-500 hover:scale-[1.02] cursor-pointer"
+            style={{ rotate: `${(idx % 2 === 0 ? '-1deg' : '1deg')}` }}
           >
-            <div className="absolute inset-0 flex items-center justify-center text-ink/5 group-hover:text-ink/10 transition-colors">
-              <ImageIcon className="w-24 h-24" />
+            <div className="w-full aspect-[4/5] bg-paper-dark border-[12px] border-white relative overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
+              <div className="absolute inset-0 flex items-center justify-center text-ink/5 group-hover:text-ink/10 transition-colors">
+                <ImageIcon className="w-24 h-24" />
+              </div>
             </div>
             
-            <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/20 to-transparent">
-              <h3 className="text-xl font-serif font-black tracking-tight leading-tight text-white drop-shadow-md">{album.title}</h3>
-              <p className="text-[10px] font-sans uppercase tracking-[0.1em] text-white/90 drop-shadow-md mt-1">
-                {format(new Date(album.addedAt), "MMM yyyy", { locale: ptBR })}
+            <div className="mt-6 text-center space-y-1 h-32">
+              <p className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-ink-light">
+                {format(new Date(album.addedAt), "yyyy", { locale: ptBR })}
+              </p>
+              <h3 className="text-xl font-serif text-ink tracking-tight uppercase group-hover:text-terracotta transition-colors leading-tight">
+                {album.title}
+              </h3>
+              <p className="font-handwriting text-ink/60 text-xl italic mt-2">
+                "Um dia para lembrar."
               </p>
             </div>
           </button>

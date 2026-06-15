@@ -1,5 +1,3 @@
-import { getAccessToken } from "../auth";
-
 export interface DriveFile {
   id: string;
   name: string;
@@ -9,47 +7,33 @@ export interface DriveFile {
 }
 
 export async function fetchDrivePhotos(folderId?: string, pageToken?: string): Promise<{ files: DriveFile[], nextPageToken?: string }> {
-  const token = await getAccessToken();
-  if (!token) throw new Error("No access token available.");
-
-  let q = "(mimeType = 'image/jpeg' or mimeType = 'image/png' or mimeType = 'image/gif' or mimeType = 'image/heic' or mimeType = 'image/webp')";
-  if (folderId) {
-    q += ` and '${folderId}' in parents`;
+  let url = `/api/drive/files`;
+  const params = new URLSearchParams();
+  if (folderId) params.append("folderId", folderId);
+  if (pageToken) params.append("pageToken", pageToken);
+  
+  if (params.toString()) {
+    url += `?${params.toString()}`;
   }
 
-  let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name,thumbnailLink,webContentLink,createdTime)&orderBy=createdTime desc&pageSize=100`;
-  if (pageToken) {
-    url += `&pageToken=${pageToken}`;
-  }
-
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+  const res = await fetch(url);
 
   if (!res.ok) {
-    const errorText = await res.text();
-    console.error("Drive API Error:", errorText);
-    throw new Error(`Failed to fetch photos: ${res.statusText} - ${errorText}`);
+    const errorData = await res.json().catch(() => ({ error: res.statusText }));
+    console.error("Drive API Proxy Error:", errorData);
+    throw new Error(`Failed to fetch photos: ${errorData.error}`);
   }
 
   return await res.json();
 }
 
 export async function fetchFolderMetadata(folderId: string): Promise<{ id: string, name: string }> {
-  const token = await getAccessToken();
-  if (!token) throw new Error("No access token available.");
-
-  const url = `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name`;
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+  const url = `/api/drive/metadata?folderId=${encodeURIComponent(folderId)}`;
+  const res = await fetch(url);
 
   if (!res.ok) {
-    throw new Error(`Failed to fetch folder: ${res.statusText}`);
+    const errorData = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(`Failed to fetch folder metadata: ${errorData.error}`);
   }
 
   return await res.json();

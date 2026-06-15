@@ -3,6 +3,17 @@ import { PhotoEvent } from "./types";
 import { differenceInDays, parseISO } from "date-fns";
 import { getAlbums } from "./albums";
 
+export function getCustomDates(): Record<string, string> {
+  const data = localStorage.getItem("custom_photo_dates");
+  return data ? JSON.parse(data) : {};
+}
+
+export function saveCustomDate(photoId: string, isoString: string) {
+  const dates = getCustomDates();
+  dates[photoId] = isoString;
+  localStorage.setItem("custom_photo_dates", JSON.stringify(dates));
+}
+
 export async function loadAndClusterPhotos(): Promise<PhotoEvent[]> {
     const albums = getAlbums();
     if (albums.length === 0) return [];
@@ -23,8 +34,14 @@ export async function loadAndClusterPhotos(): Promise<PhotoEvent[]> {
     const results = await Promise.all(fetchPromises);
     allFiles = results.flat();
 
+    const customDates = getCustomDates();
+
     // Sort by capturing date (Drive createdTime or original metadata) desc
-    allFiles.sort((a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime());
+    allFiles.sort((a, b) => {
+      const dateA = customDates[a.id] || a.createdTime;
+      const dateB = customDates[b.id] || b.createdTime;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
 
     const events: PhotoEvent[] = [];
     let currentEvent: PhotoEvent | null = null;
@@ -32,7 +49,8 @@ export async function loadAndClusterPhotos(): Promise<PhotoEvent[]> {
     // Cluster photos if difference > 3 days
     for (const file of allFiles) {
         if (!file.thumbnailLink) continue; // Skip files without thumbnails
-        const date = parseISO(file.createdTime);
+        const dateStr = customDates[file.id] || file.createdTime;
+        const date = parseISO(dateStr);
 
         if (!currentEvent) {
             currentEvent = {
