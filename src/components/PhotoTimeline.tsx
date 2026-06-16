@@ -142,8 +142,59 @@ export function PhotoTimeline({
     return title.includes(searchQuery.toLowerCase()) || dateStr.includes(searchQuery.toLowerCase());
   });
 
+  const spreads = React.useMemo(() => {
+    if (!openedEvent) return [];
+    const photos = openedEvent.photos;
+    const result = [];
+    let i = 0;
+    let spreadIdx = 0;
+    while (i < photos.length) {
+      // Every 3rd spread, make the left side full-bleed (1 photo). Right side gets 2 photos.
+      // Every 5th spread, make the right side full-bleed.
+      let leftCount = 2;
+      let rightCount = 2;
+      let isLeftFullBleed = false;
+      let isRightFullBleed = false;
+
+      if (spreadIdx % 3 === 0 && spreadIdx !== 0) {
+        leftCount = 1;
+        isLeftFullBleed = true;
+        rightCount = 2;
+      } else if (spreadIdx % 5 === 0) {
+        leftCount = 2;
+        rightCount = 1;
+        isRightFullBleed = true;
+      }
+
+      const leftPhotos = photos.slice(i, i + leftCount);
+      i += leftPhotos.length;
+      
+      // Correct if we ran out of photos for right side
+      const rightPhotos = photos.slice(i, i + rightCount);
+      i += rightPhotos.length;
+
+      // Ensure if left only has 1 and wasn't intended to be full bleed, we don't necessarily make it full bleed unless we want to
+      if (leftPhotos.length === 1 && !isLeftFullBleed) isLeftFullBleed = spreadIdx % 2 === 0;
+      if (rightPhotos.length === 1 && !isRightFullBleed) isRightFullBleed = spreadIdx % 2 !== 0;
+
+      result.push({
+        leftPhotos,
+        rightPhotos,
+        isLeftFullBleed,
+        isRightFullBleed,
+        startIndex: i - leftPhotos.length - rightPhotos.length
+      });
+      spreadIdx++;
+    }
+    return result;
+  }, [openedEvent]);
+
   if (openedEvent) {
     const photos = openedEvent.photos;
+
+    const maxAlbumPageIndex = Math.max(0, spreads.length - 1);
+    const validAlbumPageIndex = Math.min(albumPageIndex, maxAlbumPageIndex);
+    const currentSpread = spreads[validAlbumPageIndex] || { leftPhotos: [], rightPhotos: [], isLeftFullBleed: false, isRightFullBleed: false, startIndex: 0 };
 
     return (
       <div className="fixed inset-0 z-[60] flex flex-col items-center overflow-hidden transition-colors duration-500" style={{ backgroundColor: albumThemes[openedEvent.id] || '#E5DFD5' }}>
@@ -160,22 +211,22 @@ export function PhotoTimeline({
             setAlbumPageIndex(0);
             onClearForceOpen?.();
           }}
-          className="absolute top-6 left-6 md:top-8 md:left-8 z-[70] p-3 md:p-4 bg-white/40 hover:bg-white/80 backdrop-blur-md shadow-sm border border-black/5 rounded-full text-ink/70 hover:text-ink transition-all hover:scale-105"
+          className="absolute top-4 left-4 md:top-6 md:left-6 z-[70] p-2 bg-white/30 hover:bg-white/60 backdrop-blur-md shadow-sm border border-black/5 rounded-full text-ink/70 hover:text-ink transition-all hover:scale-105"
           title="Voltar"
         >
-          <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
+          <ArrowLeft className="w-4 h-4" />
         </button>
 
         {/* Toolbar */}
-        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-[70] flex gap-2">
+        <div className="absolute top-4 right-4 md:top-6 md:right-6 z-[70] flex gap-2">
           
           <div className="relative">
             <button 
               onClick={() => { setIsFontPickerOpen(!isFontPickerOpen); setIsEmojiPickerOpen(false); setIsThemePickerOpen(false); }}
-              className="p-3 md:p-4 bg-white/40 hover:bg-white/80 backdrop-blur-md shadow-sm border border-black/5 rounded-full text-ink/70 hover:text-ink transition-all hover:scale-105"
+              className="p-1.5 bg-white/20 hover:bg-white/50 backdrop-blur-md shadow-sm border border-black/5 rounded-full text-ink/50 hover:text-ink transition-all hover:scale-105"
               title="Adicionar Texto"
             >
-              <Type className="w-5 h-5 md:w-6 md:h-6" />
+              <Type className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
             <AnimatePresence>
               {isFontPickerOpen && (
@@ -215,10 +266,10 @@ export function PhotoTimeline({
           <div className="relative">
             <button 
               onClick={() => { setIsEmojiPickerOpen(!isEmojiPickerOpen); setIsFontPickerOpen(false); setIsThemePickerOpen(false); }}
-              className="p-3 md:p-4 bg-white/40 hover:bg-white/80 backdrop-blur-md shadow-sm border border-black/5 rounded-full text-ink/70 hover:text-ink transition-all hover:scale-105"
+              className="p-1.5 bg-white/20 hover:bg-white/50 backdrop-blur-md shadow-sm border border-black/5 rounded-full text-ink/50 hover:text-ink transition-all hover:scale-105"
               title="Adicionar Figuração/Emoji"
             >
-              <Smile className="w-5 h-5 md:w-6 md:h-6" />
+              <Smile className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
             <AnimatePresence>
               {isEmojiPickerOpen && (
@@ -245,10 +296,10 @@ export function PhotoTimeline({
           <div className="relative">
             <button 
               onClick={() => { setIsThemePickerOpen(!isThemePickerOpen); setIsFontPickerOpen(false); setIsEmojiPickerOpen(false); }}
-              className="p-3 md:p-4 bg-white/40 hover:bg-white/80 backdrop-blur-md shadow-sm border border-black/5 rounded-full text-ink/70 hover:text-ink transition-all hover:scale-105"
+              className="p-1.5 bg-white/20 hover:bg-white/50 backdrop-blur-md shadow-sm border border-black/5 rounded-full text-ink/50 hover:text-ink transition-all hover:scale-105"
               title="Cores da página"
             >
-              <Palette className="w-5 h-5 md:w-6 md:h-6" />
+              <Palette className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
             
             <AnimatePresence>
@@ -285,25 +336,25 @@ export function PhotoTimeline({
           </div>
         </div>
 
-        <div className="w-full flex-1 flex flex-col items-center justify-center z-10 relative overflow-hidden py-4 px-2 md:p-8 xl:p-12">
+        <div className="w-full flex-1 flex flex-col items-center justify-center z-10 relative overflow-hidden">
           
           <div className="absolute top-1/2 left-2 md:left-6 -translate-y-1/2 z-30">
             <button 
               onClick={() => setAlbumPageIndex(p => Math.max(0, p - 1))}
               disabled={albumPageIndex === 0}
-              className="p-3 md:p-4 bg-white/50 backdrop-blur-sm border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-full text-ink hover:bg-white hover:scale-105 transition-all disabled:opacity-30 disabled:hover:bg-white/50 disabled:hover:scale-100"
+              className="p-2 md:p-3 bg-white/30 backdrop-blur-md border border-black/5 shadow-sm rounded-full text-ink hover:bg-white hover:scale-105 transition-all disabled:opacity-30 disabled:hover:scale-100"
             >
-              <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
           </div>
 
           <div className="absolute top-1/2 right-2 md:right-6 -translate-y-1/2 z-30">
             <button 
-              onClick={() => setAlbumPageIndex(p => Math.min(Math.ceil(photos.length / 2) - 1, p + 1))}
-              disabled={photos.length === 0 || albumPageIndex >= Math.ceil(photos.length / 2) - 1}
-              className="p-3 md:p-4 bg-white/50 backdrop-blur-sm border border-black/5 shadow-[0_4px_15px_rgba(0,0,0,0.05)] rounded-full text-ink hover:bg-white hover:scale-105 transition-all disabled:opacity-30 disabled:hover:bg-white/50 disabled:hover:scale-100"
+              onClick={() => setAlbumPageIndex(p => Math.min(Math.ceil(photos.length / 4) - 1, p + 1))}
+              disabled={photos.length === 0 || albumPageIndex >= Math.ceil(photos.length / 4) - 1}
+              className="p-2 md:p-3 bg-white/30 backdrop-blur-md border border-black/5 shadow-sm rounded-full text-ink hover:bg-white hover:scale-105 transition-all disabled:opacity-30 disabled:hover:scale-100"
             >
-              <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
 
@@ -314,26 +365,48 @@ export function PhotoTimeline({
               animate={{ opacity: 1, rotateY: 0, scale: 1 }}
               exit={{ opacity: 0, rotateY: -90, scale: 0.98 }}
               transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
-              style={{ perspective: 3000, transformOrigin: 'left center' }}
-              className="w-full h-full max-w-[100vw] md:max-w-[1400px] bg-[#FCFAF8] shadow-[0_25px_60px_rgba(0,0,0,0.2)] border border-black/[0.04] flex items-stretch md:rounded-lg overflow-hidden"
+              style={{ perspective: 3000, transformOrigin: 'left center', backgroundColor: albumThemes[openedEvent.id] || '#FCFAF8' }}
+              className="w-full h-full max-w-full flex items-stretch overflow-hidden"
             >
               {(() => {
-                const pagePhotos = photos.slice(albumPageIndex * 2, albumPageIndex * 2 + 2);
-                const leftPhotos = pagePhotos.slice(0, 1);
-                const rightPhotos = pagePhotos.slice(1, 2);
-                
-                const renderPhoto = (currentPhoto: DriveFile, indexInPage: number, sideOffset: number = 0) => {
-                  const index = albumPageIndex * 2 + indexInPage + sideOffset;
+                const renderPhoto = (currentPhoto: DriveFile, indexInPage: number, sideOffset: number = 0, totalOnPage: number = 1, isFullBleed: boolean = false) => {
+                  const index = currentSpread.startIndex + indexInPage + sideOffset;
+                  
+                  if (isFullBleed) {
+                    return (
+                      <div 
+                        key={currentPhoto.id}
+                        className="absolute inset-0 w-full h-full z-0 overflow-hidden cursor-pointer group"
+                        onClick={() => setLightboxData({ photos, index })}
+                      >
+                        <img 
+                          src={currentPhoto.thumbnailLink?.replace("=s220", "=s1024") || currentPhoto.webContentLink} 
+                          alt={currentPhoto.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                        {favorites.includes(currentPhoto.id) && (
+                          <div className="absolute top-4 right-4 z-20 text-red-500 drop-shadow-sm">
+                            <Heart className="w-6 h-6 md:w-8 md:h-8" fill="currentColor" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
                   // Pseudo-random rotation between -3 and 3 degrees
                   const rotation = (index % 5 === 0 ? '-2.5deg' : index % 3 === 0 ? '3deg' : index % 2 === 0 ? '-1.5deg' : '2deg');
+                  const marginTopClass = indexInPage % 2 !== 0 && totalOnPage > 1 ? 'md:mt-24' : '';
                   
                   return (
                     <div 
                       key={currentPhoto.id}
-                      className="flex flex-col items-center justify-center relative group w-full max-w-full px-4 md:px-8"
+                      className={`flex flex-col items-center justify-center relative group px-2 max-w-full ${totalOnPage > 1 ? 'w-full md:w-[45%]' : 'w-full md:px-8'} ${marginTopClass}`}
                     >
                       <div 
-                        className="bg-white p-3 md:p-5 pb-12 shadow-[0_10px_25px_rgba(0,0,0,0.06)] border border-black/5 relative transform transition-all duration-400 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)] hover:rotate-1 cursor-pointer z-10 w-fit max-w-full"
+                        className="bg-white p-2 md:p-3 pb-8 md:pb-10 shadow-[0_10px_25px_rgba(0,0,0,0.06)] border border-black/5 relative transform transition-all duration-400 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)] cursor-pointer z-10 w-fit max-w-full"
                         onClick={() => setLightboxData({ photos, index })}
                         style={{ rotate: rotation }}
                       >
@@ -394,7 +467,7 @@ export function PhotoTimeline({
                   <div className="flex w-full h-full relative font-serif">
                     
                     {/* LEFT PAGE (Desktop Only) */}
-                    <div className="hidden md:flex flex-1 relative bg-[#FCFAF8] shadow-[inset_-10px_0_30px_rgba(0,0,0,0.04)] flex-col p-8 lg:p-16 z-10 w-1/2 justify-center">
+                    <div className="hidden md:flex flex-1 relative bg-transparent shadow-[inset_-10px_0_30px_rgba(0,0,0,0.04)] flex-col p-8 lg:p-16 z-10 w-1/2 justify-center">
                       {albumPageIndex % 4 === 0 && (
                         <div className="absolute top-12 left-12 font-handwriting text-4xl text-ink/40 -rotate-12 pointer-events-none">
                           Memórias...
@@ -404,51 +477,51 @@ export function PhotoTimeline({
                         <div className="absolute bottom-1/4 left-1/4 w-16 h-5 bg-[#C5BAA9]/20 backdrop-blur-sm -rotate-6 pointer-events-none mix-blend-multiply"></div>
                       )}
                       
-                      <div className="flex-1 flex flex-wrap items-center justify-center gap-8 lg:gap-16 w-full h-full">
-                        {leftPhotos.map((photo, i) => renderPhoto(photo, i, 0))}
-                        {leftPhotos.length === 0 && <div className="text-ink/20 italic font-serif">Página em branco</div>}
+                      <div className="flex-1 flex flex-wrap items-center justify-center gap-4 lg:gap-8 w-full h-full relative">
+                        {currentSpread.leftPhotos.map((photo, i) => renderPhoto(photo, i, 0, currentSpread.leftPhotos.length, currentSpread.isLeftFullBleed))}
+                        {currentSpread.leftPhotos.length === 0 && <div className="text-ink/20 italic font-serif">Página em branco</div>}
                       </div>
 
-                      <div className="absolute left-8 bottom-8 text-[9px] font-mono text-ink/30 uppercase tracking-widest">
-                        Pág. {String(albumPageIndex * 2 + 1).padStart(2, '0')}
+                      <div className="absolute left-8 bottom-8 text-[9px] font-mono text-ink/30 uppercase tracking-widest z-20">
+                        Pág. {String(validAlbumPageIndex * 2 + 1).padStart(2, '0')}
                       </div>
                     </div>
 
                     {/* CENTER SPINE CREASE */}
-                    <div className="w-8 md:w-16 shrink-0 bg-gradient-to-r from-black/[0.08] via-black/[0.03] to-transparent border-r border-black/[0.06] shadow-[inset_-2px_0_15px_rgba(0,0,0,0.04)] z-20"></div>
+                    <div className="w-8 md:w-16 shrink-0 bg-gradient-to-r from-black/[0.08] via-black/[0.03] to-transparent border-r border-black/[0.06] shadow-[inset_-2px_0_15px_rgba(0,0,0,0.04)] z-20 pointer-events-none"></div>
 
                     {/* RIGHT PAGE */}
-                    <div className="flex-1 relative bg-[#FCFAF8] shadow-[inset_10px_0_30px_rgba(0,0,0,0.03)] flex-col p-6 md:p-8 lg:p-16 z-10 md:w-1/2 justify-center overflow-y-auto no-scrollbar md:overflow-visible">
-                      {albumPageIndex % 4 === 1 && (
-                        <div className="absolute bottom-12 right-24 font-serif italic text-2xl text-ink/30 -rotate-3 pointer-events-none">
+                    <div className="flex-1 relative bg-transparent shadow-[inset_10px_0_30px_rgba(0,0,0,0.03)] flex-col p-6 md:p-8 lg:p-16 z-10 md:w-1/2 justify-center overflow-y-auto no-scrollbar md:overflow-visible">
+                      {validAlbumPageIndex % 4 === 1 && (
+                        <div className="absolute bottom-12 right-24 font-serif italic text-2xl text-ink/30 -rotate-3 pointer-events-none z-10">
                           Um dia para recordar
                         </div>
                       )}
-                      {albumPageIndex % 4 === 2 && (
-                        <div className="absolute top-16 right-12 font-handwriting text-3xl text-ink/40 rotate-6 pointer-events-none">
+                      {validAlbumPageIndex % 4 === 2 && (
+                        <div className="absolute top-16 right-12 font-handwriting text-3xl text-ink/40 rotate-6 pointer-events-none z-10">
                           Detalhes Perfeitos
                         </div>
                       )}
-                      {(albumPageIndex % 5 === 0) && (
-                        <div className="absolute top-1/4 right-32 text-5xl opacity-10 rotate-12 pointer-events-none">✨</div>
+                      {(validAlbumPageIndex % 5 === 0) && (
+                        <div className="absolute top-1/4 right-32 text-5xl opacity-10 rotate-12 pointer-events-none z-10">✨</div>
                       )}
-                      {(albumPageIndex % 3 === 2) && (
-                        <div className="absolute top-1/2 right-1/4 w-12 h-4 bg-red-800/10 backdrop-blur-sm rotate-12 pointer-events-none mix-blend-multiply"></div>
+                      {(validAlbumPageIndex % 3 === 2) && (
+                        <div className="absolute top-1/2 right-1/4 w-12 h-4 bg-red-800/10 backdrop-blur-sm rotate-12 pointer-events-none mix-blend-multiply z-10"></div>
                       )}
 
-                      <div className="flex-1 flex flex-wrap items-center justify-center gap-8 lg:gap-16 w-full h-full relative">
+                      <div className="flex-1 flex flex-wrap items-center justify-center gap-6 lg:gap-10 w-full h-full relative">
                         {/* On mobile, we render ALL photos from the page here, otherwise just the right ones */}
                         <div className="md:hidden flex flex-col items-center justify-center gap-12 w-full py-8">
-                          {pagePhotos.map((photo, i) => renderPhoto(photo, i, 0))}
+                          {[...currentSpread.leftPhotos, ...currentSpread.rightPhotos].map((photo, i) => renderPhoto(photo, i, 0, currentSpread.leftPhotos.length + currentSpread.rightPhotos.length, false))}
                         </div>
-                        <div className="hidden md:flex flex-wrap items-center justify-center gap-8 lg:gap-16 w-full">
-                           {rightPhotos.map((photo, i) => renderPhoto(photo, i, 1))}
-                           {rightPhotos.length === 0 && leftPhotos.length > 0 && <div className="text-ink/20 italic font-serif">Página em branco</div>}
+                        <div className="hidden md:flex flex-wrap items-center justify-center gap-4 lg:gap-8 w-full h-full relative">
+                           {currentSpread.rightPhotos.map((photo, i) => renderPhoto(photo, i, currentSpread.leftPhotos.length, currentSpread.rightPhotos.length, currentSpread.isRightFullBleed))}
+                           {currentSpread.rightPhotos.length === 0 && currentSpread.leftPhotos.length > 0 && <div className="text-ink/20 italic font-serif">Página em branco</div>}
                         </div>
                       </div>
 
-                      <div className="absolute right-6 md:right-8 bottom-6 md:bottom-8 text-[9px] font-mono text-ink/30 uppercase tracking-widest">
-                        Pág. {String(albumPageIndex * 2 + 2).padStart(2, '0')}
+                      <div className="absolute right-6 md:right-8 bottom-6 md:bottom-8 text-[9px] font-mono text-ink/30 uppercase tracking-widest z-20">
+                        Pág. {String(validAlbumPageIndex * 2 + 2).padStart(2, '0')}
                       </div>
                     </div>
                     

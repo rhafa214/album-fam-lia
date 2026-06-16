@@ -4,6 +4,7 @@ export interface DriveFile {
   thumbnailLink?: string;
   webContentLink?: string;
   createdTime: string;
+  description?: string;
 }
 
 export async function fetchDrivePhotos(folderId?: string, pageToken?: string): Promise<{ files: DriveFile[], nextPageToken?: string }> {
