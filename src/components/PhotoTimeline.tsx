@@ -365,9 +365,31 @@ export function PhotoTimeline({
               animate={{ opacity: 1, rotateY: 0, scale: 1 }}
               exit={{ opacity: 0, rotateY: -90, scale: 0.98 }}
               transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
-              style={{ perspective: 3000, transformOrigin: 'left center', backgroundColor: albumThemes[openedEvent.id] || '#FCFAF8' }}
-              className="w-full h-full max-w-full flex items-stretch overflow-hidden"
+              style={{ perspective: 3000, transformOrigin: 'left center', backgroundColor: albumThemes[openedEvent.id] || '#F9F6F0' }}
+              className="w-full h-full max-w-full flex items-stretch overflow-hidden relative"
             >
+              <div 
+                className="absolute inset-0 mix-blend-multiply opacity-[0.25] pointer-events-none z-0" 
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
+              />
+              
+              {/* Dynamic Abstract Blobs to add life to background */}
+              <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-white/40 rounded-full blur-[80px] pointer-events-none z-0 mix-blend-overlay"></div>
+              <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-black/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
+              
+              {validAlbumPageIndex % 2 === 0 && (
+                <div 
+                  className="absolute inset-0 opacity-[0.04] pointer-events-none z-0" 
+                  style={{ backgroundImage: `radial-gradient(circle at center, black 2px, transparent 2px)`, backgroundSize: '32px 32px' }} 
+                />
+              )}
+              {validAlbumPageIndex % 2 !== 0 && (
+                <div 
+                  className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" 
+                  style={{ backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, black 10px, black 11px)` }} 
+                />
+              )}
+
               {(() => {
                 const renderPhoto = (currentPhoto: DriveFile, indexInPage: number, sideOffset: number = 0, totalOnPage: number = 1, isFullBleed: boolean = false) => {
                   const index = currentSpread.startIndex + indexInPage + sideOffset;
@@ -398,12 +420,12 @@ export function PhotoTimeline({
 
                   // Pseudo-random rotation between -3 and 3 degrees
                   const rotation = (index % 5 === 0 ? '-2.5deg' : index % 3 === 0 ? '3deg' : index % 2 === 0 ? '-1.5deg' : '2deg');
-                  const marginTopClass = indexInPage % 2 !== 0 && totalOnPage > 1 ? 'md:mt-24' : '';
+                  const marginTopClass = indexInPage % 2 !== 0 && totalOnPage > 1 ? 'md:mt-24 landscape:mt-8' : '';
                   
                   return (
                     <div 
                       key={currentPhoto.id}
-                      className={`flex flex-col items-center justify-center relative group px-2 max-w-full ${totalOnPage > 1 ? 'w-full md:w-[45%]' : 'w-full md:px-8'} ${marginTopClass}`}
+                      className={`flex flex-col items-center justify-center relative group px-1 md:px-2 max-w-full mx-auto ${totalOnPage > 1 ? 'w-[88%] sm:w-[75%] md:w-[45%] landscape:w-[45%]' : 'w-[88%] sm:w-[80%] md:w-full landscape:w-full md:px-8 landscape:px-2'} ${marginTopClass}`}
                     >
                       <div 
                         className="bg-white p-2 md:p-3 pb-8 md:pb-10 shadow-[0_10px_25px_rgba(0,0,0,0.06)] border border-black/5 relative transform transition-all duration-400 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)] cursor-pointer z-10 w-fit max-w-full"
@@ -411,8 +433,8 @@ export function PhotoTimeline({
                         style={{ rotate: rotation }}
                       >
                         {/* Tape effect */}
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-10 md:w-16 h-4 md:h-5 bg-white/60 backdrop-blur-sm border border-black/5 shadow-sm opacity-90 mix-blend-overlay" style={{ rotate: index % 2 === 0 ? '-3deg' : '4deg' }}></div>
-                        <div className="absolute -bottom-3 right-4 w-8 md:w-14 h-4 md:h-5 bg-white/50 backdrop-blur-sm border border-black/5 shadow-sm opacity-70 mix-blend-overlay" style={{ rotate: '-6deg' }}></div>
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-8 md:w-16 h-3 md:h-5 bg-white/60 backdrop-blur-sm border border-black/5 shadow-sm opacity-90 mix-blend-overlay" style={{ rotate: index % 2 === 0 ? '-3deg' : '4deg' }}></div>
+                        <div className="absolute -bottom-3 right-4 w-6 md:w-14 h-3 md:h-5 bg-white/50 backdrop-blur-sm border border-black/5 shadow-sm opacity-70 mix-blend-overlay" style={{ rotate: '-6deg' }}></div>
                         
                         {favorites.includes(currentPhoto.id) && (
                           <div className="absolute top-2 right-2 md:top-4 md:right-4 z-20 text-red-500 drop-shadow-sm">
@@ -422,7 +444,7 @@ export function PhotoTimeline({
                         <img 
                           src={currentPhoto.thumbnailLink?.replace("=s220", "=s1024") || currentPhoto.webContentLink} 
                           alt={currentPhoto.name}
-                          className="w-auto h-auto max-w-full max-h-[45vh] md:max-h-[55vh] object-contain transition-transform duration-500 group-hover:scale-[1.02]"
+                          className="w-auto h-auto max-w-full max-h-[45vh] landscape:max-h-[65vh] md:landscape:max-h-[55vh] md:max-h-[55vh] object-contain transition-transform duration-500 group-hover:scale-[1.02]"
                           loading="lazy"
                           referrerPolicy="no-referrer"
                         />
@@ -467,17 +489,20 @@ export function PhotoTimeline({
                   <div className="flex w-full h-full relative font-serif">
                     
                     {/* LEFT PAGE (Desktop Only) */}
-                    <div className="hidden md:flex flex-1 relative bg-transparent shadow-[inset_-10px_0_30px_rgba(0,0,0,0.04)] flex-col p-8 lg:p-16 z-10 w-1/2 justify-center">
-                      {albumPageIndex % 4 === 0 && (
-                        <div className="absolute top-12 left-12 font-handwriting text-4xl text-ink/40 -rotate-12 pointer-events-none">
+                    <div className="hidden md:flex landscape:flex flex-1 relative bg-transparent shadow-[inset_-10px_0_30px_rgba(0,0,0,0.04)] flex-col p-4 md:p-8 lg:p-16 z-10 w-1/2 justify-center">
+                      {validAlbumPageIndex % 4 === 0 && (
+                        <div className="absolute top-12 left-12 font-handwriting text-5xl text-black/20 -rotate-6 pointer-events-none z-10 drop-shadow-sm">
                           Memórias...
                         </div>
                       )}
-                      {(albumPageIndex % 3 === 1) && (
-                        <div className="absolute bottom-1/4 left-1/4 w-16 h-5 bg-[#C5BAA9]/20 backdrop-blur-sm -rotate-6 pointer-events-none mix-blend-multiply"></div>
+                      {(validAlbumPageIndex % 3 === 1) && (
+                        <div className="absolute bottom-1/4 left-1/4 w-32 h-10 bg-amber-500/10 rounded-full blur-[2px] -rotate-6 pointer-events-none mix-blend-multiply z-10"></div>
+                      )}
+                      {(validAlbumPageIndex % 5 === 2) && (
+                        <div className="absolute top-1/3 left-10 w-24 h-24 border-4 border-sky-400/20 rounded-full pointer-events-none z-10 border-dashed"></div>
                       )}
                       
-                      <div className="flex-1 flex flex-wrap items-center justify-center gap-4 lg:gap-8 w-full h-full relative">
+                      <div className="flex-1 flex flex-wrap items-center justify-center gap-4 lg:gap-8 w-full h-full relative z-20">
                         {currentSpread.leftPhotos.map((photo, i) => renderPhoto(photo, i, 0, currentSpread.leftPhotos.length, currentSpread.isLeftFullBleed))}
                         {currentSpread.leftPhotos.length === 0 && <div className="text-ink/20 italic font-serif">Página em branco</div>}
                       </div>
@@ -491,30 +516,33 @@ export function PhotoTimeline({
                     <div className="w-8 md:w-16 shrink-0 bg-gradient-to-r from-black/[0.08] via-black/[0.03] to-transparent border-r border-black/[0.06] shadow-[inset_-2px_0_15px_rgba(0,0,0,0.04)] z-20 pointer-events-none"></div>
 
                     {/* RIGHT PAGE */}
-                    <div className="flex-1 relative bg-transparent shadow-[inset_10px_0_30px_rgba(0,0,0,0.03)] flex-col p-6 md:p-8 lg:p-16 z-10 md:w-1/2 justify-center overflow-y-auto no-scrollbar md:overflow-visible">
+                    <div className="flex-1 relative bg-transparent shadow-[inset_10px_0_30px_rgba(0,0,0,0.03)] flex-col p-4 md:p-8 lg:p-16 z-10 w-full md:w-1/2 landscape:w-1/2 justify-center overflow-y-auto landscape:overflow-y-visible no-scrollbar md:overflow-visible">
                       {validAlbumPageIndex % 4 === 1 && (
-                        <div className="absolute bottom-12 right-24 font-serif italic text-2xl text-ink/30 -rotate-3 pointer-events-none z-10">
+                        <div className="absolute bottom-12 right-24 font-serif italic text-3xl text-black/20 -rotate-3 pointer-events-none z-10 drop-shadow-sm">
                           Um dia para recordar
                         </div>
                       )}
                       {validAlbumPageIndex % 4 === 2 && (
-                        <div className="absolute top-16 right-12 font-handwriting text-3xl text-ink/40 rotate-6 pointer-events-none z-10">
+                        <div className="absolute top-16 right-12 font-handwriting text-4xl text-black/20 rotate-6 pointer-events-none z-10 drop-shadow-sm">
                           Detalhes Perfeitos
                         </div>
                       )}
                       {(validAlbumPageIndex % 5 === 0) && (
-                        <div className="absolute top-1/4 right-32 text-5xl opacity-10 rotate-12 pointer-events-none z-10">✨</div>
+                        <div className="absolute top-1/4 right-32 text-6xl opacity-[0.15] rotate-12 pointer-events-none z-10 drop-shadow-md">✨</div>
                       )}
                       {(validAlbumPageIndex % 3 === 2) && (
-                        <div className="absolute top-1/2 right-1/4 w-12 h-4 bg-red-800/10 backdrop-blur-sm rotate-12 pointer-events-none mix-blend-multiply z-10"></div>
+                        <div className="absolute top-1/2 right-1/4 w-32 h-32 bg-rose-500/10 rounded-full blur-[2px] rotate-12 pointer-events-none mix-blend-multiply z-10"></div>
+                      )}
+                      {(validAlbumPageIndex % 4 === 3) && (
+                        <div className="absolute bottom-1/3 right-10 w-20 h-20 border-[6px] border-emerald-400/20 rounded-full pointer-events-none z-10 border-dotted"></div>
                       )}
 
-                      <div className="flex-1 flex flex-wrap items-center justify-center gap-6 lg:gap-10 w-full h-full relative">
+                      <div className="flex-1 flex flex-wrap items-center justify-center gap-6 lg:gap-10 w-full h-full relative z-20">
                         {/* On mobile, we render ALL photos from the page here, otherwise just the right ones */}
-                        <div className="md:hidden flex flex-col items-center justify-center gap-12 w-full py-8">
+                        <div className="flex md:hidden landscape:hidden flex-col items-center justify-center gap-12 w-full py-8">
                           {[...currentSpread.leftPhotos, ...currentSpread.rightPhotos].map((photo, i) => renderPhoto(photo, i, 0, currentSpread.leftPhotos.length + currentSpread.rightPhotos.length, false))}
                         </div>
-                        <div className="hidden md:flex flex-wrap items-center justify-center gap-4 lg:gap-8 w-full h-full relative">
+                        <div className="hidden md:flex landscape:flex flex-wrap items-center justify-center gap-4 lg:gap-8 w-full h-full relative">
                            {currentSpread.rightPhotos.map((photo, i) => renderPhoto(photo, i, currentSpread.leftPhotos.length, currentSpread.rightPhotos.length, currentSpread.isRightFullBleed))}
                            {currentSpread.rightPhotos.length === 0 && currentSpread.leftPhotos.length > 0 && <div className="text-ink/20 italic font-serif">Página em branco</div>}
                         </div>
