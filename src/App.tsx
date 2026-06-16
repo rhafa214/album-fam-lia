@@ -7,6 +7,7 @@ import { PhotoEvent } from "./lib/types";
 import { loadAndClusterPhotos } from "./lib/events";
 import { Loader2, Image } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useSyncedState } from "./lib/sync";
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -17,7 +18,8 @@ export default function App() {
 
   const [activeEvent, setActiveEvent] = useState<PhotoEvent | null>(null);
 
-  const [mainCoverPhoto, setMainCoverPhoto] = useState<string | null>(null);
+  const [mainCoverPhoto, setMainCoverPhoto] = useSyncedState<string | null>("main-cover-photo", null);
+  useSyncedState<Record<string, string>>("custom_photo_dates", {});
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -32,9 +34,6 @@ export default function App() {
       }
     };
     fetchEvents();
-
-    const savedCover = localStorage.getItem("main-cover-photo");
-    if (savedCover) setMainCoverPhoto(savedCover);
   }, []);
 
   const coverPhoto = mainCoverPhoto || (events.length > 0 && events[0]?.photos[0]
@@ -210,7 +209,6 @@ export default function App() {
                           const url = photo.thumbnailLink?.replace("=s220", "=s1024") || photo.webContentLink;
                           if (url) {
                             setMainCoverPhoto(url);
-                            localStorage.setItem("main-cover-photo", url);
                           }
                         }}
                         className="w-full aspect-square relative overflow-hidden rounded-lg border border-transparent hover:border-white transition-all hover:scale-105"

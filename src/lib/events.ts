@@ -2,6 +2,8 @@ import { DriveFile, fetchDrivePhotos } from "./drive";
 import { PhotoEvent } from "./types";
 import { differenceInDays, parseISO } from "date-fns";
 import { getAlbums } from "./albums";
+import { auth, db } from "./firebase";
+import { setDoc, doc } from "firebase/firestore";
 
 export function getCustomDates(): Record<string, string> {
   const data = localStorage.getItem("custom_photo_dates");
@@ -12,6 +14,11 @@ export function saveCustomDate(photoId: string, isoString: string) {
   const dates = getCustomDates();
   dates[photoId] = isoString;
   localStorage.setItem("custom_photo_dates", JSON.stringify(dates));
+  
+  if (auth.currentUser) {
+    setDoc(doc(db, `users/${auth.currentUser.uid}/preferences`, "custom_photo_dates"), { value: dates }, { merge: true })
+      .catch(console.error);
+  }
 }
 
 export async function loadAndClusterPhotos(): Promise<PhotoEvent[]> {

@@ -134,7 +134,7 @@ export function CollectionsView() {
             className="mt-6 flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-sans font-bold uppercase tracking-widest hover:bg-indigo-100 transition-colors border border-indigo-100"
           >
             <DownloadCloud className="w-4 h-4" />
-            Salvar na Nuvem
+            Salvar na Nuvem / Fazer Login
           </button>
         ) : (
           <div className="mt-6 flex flex-col items-center space-y-2">

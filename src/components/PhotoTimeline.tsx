@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowLeft, ArrowRight, BookOpen, Clock, Calendar, Heart, Palette, Download, Image as ImageIcon, Type, Smile, Trash2, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useSyncedState } from "../lib/sync";
 
 type Decoration = {
   id: string;
@@ -39,18 +40,10 @@ export function PhotoTimeline({
   const [editingDate, setEditingDate] = useState(false);
   const [newDateStr, setNewDateStr] = useState("");
 
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem("photo-favorites") || "[]"); } catch { return []; }
-  });
-  const [coverPhotos, setCoverPhotos] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem("album-covers") || "{}"); } catch { return {}; }
-  });
-  const [albumThemes, setAlbumThemes] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem("album-themes") || "{}"); } catch { return {}; }
-  });
-  const [decorations, setDecorations] = useState<Record<string, Decoration[]>>(() => {
-    try { return JSON.parse(localStorage.getItem("album-decorations") || "{}"); } catch { return {}; }
-  });
+  const [favorites, setFavorites] = useSyncedState<string[]>("photo-favorites", []);
+  const [coverPhotos, setCoverPhotos] = useSyncedState<Record<string, string>>("album-covers", {});
+  const [albumThemes, setAlbumThemes] = useSyncedState<Record<string, string>>("album-themes", {});
+  const [decorations, setDecorations] = useSyncedState<Record<string, Decoration[]>>("album-decorations", {});
 
   const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
@@ -65,11 +58,6 @@ export function PhotoTimeline({
     { name: 'Moderna', class: 'font-sans' },
     { name: 'Máquina', class: 'font-mono' }
   ];
-
-  useEffect(() => { localStorage.setItem("photo-favorites", JSON.stringify(favorites)); }, [favorites]);
-  useEffect(() => { localStorage.setItem("album-covers", JSON.stringify(coverPhotos)); }, [coverPhotos]);
-  useEffect(() => { localStorage.setItem("album-themes", JSON.stringify(albumThemes)); }, [albumThemes]);
-  useEffect(() => { localStorage.setItem("album-decorations", JSON.stringify(decorations)); }, [decorations]);
 
   const toggleFavorite = (photoId: string) => {
     setFavorites(prev => prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]);
