@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Album } from "../lib/types";
-import { getAlbums, addAlbumFromUrl, loadAlbumPhotos } from "../lib/albums";
-import { FolderPlus, Loader2, Image as ImageIcon } from "lucide-react";
+import { getAlbums, saveAlbums, addAlbumFromUrl, loadAlbumPhotos } from "../lib/albums";
+import { FolderPlus, Loader2, Image as ImageIcon, DownloadCloud } from "lucide-react";
 import { PhotoEvent } from "../lib/types";
 import { PhotoTimeline } from "./PhotoTimeline";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { auth, db, signInWithGoogle, logout } from "../lib/firebase";
+import { collection, onSnapshot, doc, setDoc } from "firebase/firestore";
 
 export function CollectionsView() {
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -15,9 +17,42 @@ export function CollectionsView() {
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [albumEvent, setAlbumEvent] = useState<PhotoEvent | null>(null);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
+  const [user, setUser] = useState(auth.currentUser);
 
   useEffect(() => {
+    // Load initially from local storage
     setAlbums(getAlbums());
+
+    const unsubscribeAuth = auth.onAuthStateChanged(newUser => {
+      setUser(newUser);
+      if (newUser) {
+        // Sync local albums to cloud right away
+        const localAlbums = getAlbums();
+        if (localAlbums.length > 0) {
+           saveAlbums(localAlbums);
+        }
+
+        const q = collection(db, `users/${newUser.uid}/albums`);
+        return onSnapshot(q, (snapshot) => {
+          const remoteAlbums = snapshot.docs.map(d => d.data() as Album);
+          const currentLocal = getAlbums();
+          const merged = [...currentLocal];
+          let changed = false;
+          for (const ra of remoteAlbums) {
+            if (!merged.find(a => a.id === ra.id)) {
+              merged.push(ra);
+              changed = true;
+            }
+          }
+          if (changed) {
+             localStorage.setItem("my_albums", JSON.stringify(merged));
+          }
+          setAlbums(merged);
+        });
+      }
+    });
+
+    return () => unsubscribeAuth();
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -78,8 +113,31 @@ export function CollectionsView() {
 
   return (
     <div className="w-full max-w-5xl mx-auto px-6 py-12 md:px-12 flex flex-col">
-      <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase mb-6 font-serif text-ink text-center">Capítulos</h2>
-      <p className="text-xs font-sans uppercase tracking-[0.2em] font-semibold text-ink-light max-w-xl mx-auto text-center">
+      <div className="flex flex-col items-center mb-6 relative">
+        <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase font-serif text-ink text-center">Capítulos</h2>
+        {!user ? (
+          <button 
+            onClick={signInWithGoogle}
+            className="mt-6 flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-sans font-bold uppercase tracking-widest hover:bg-indigo-100 transition-colors border border-indigo-100"
+          >
+            <DownloadCloud className="w-4 h-4" />
+            Salvar na Nuvem
+          </button>
+        ) : (
+          <div className="mt-6 flex flex-col items-center space-y-2">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-600 flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+              <DownloadCloud className="w-3.5 h-3.5" /> Sincronizado
+            </span>
+            <button 
+              onClick={logout}
+              className="text-[10px] text-ink/40 font-bold uppercase tracking-widest hover:text-ink transition-colors"
+            >
+              Sair da Conta ({user.email})
+            </button>
+          </div>
+        )}
+      </div>
+      <p className="text-xs font-sans uppercase tracking-[0.2em] font-semibold text-ink-light max-w-xl mx-auto text-center mt-2">
         Cole links de pastas do Google Drive abaixo para guardar novos capítulos no seu álbum.
       </p>
 

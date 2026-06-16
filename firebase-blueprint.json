@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/firebase/firebase-tools/master/schema/firestore-blueprint-schema.json",
+  "collections": {
+    "users": {
+      "document": {
+        "id": "userId",
+        "fields": {
+          "email": "string",
+          "lastLogin": "timestamp"
+        },
+        "collections": {
+          "albums": {
+            "document": {
+              "id": "albumId",
+              "fields": {
+                "title": "string",
+                "addedAt": "timestamp",
+                "folderId": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

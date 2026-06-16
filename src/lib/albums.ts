@@ -1,5 +1,7 @@
 import { Album } from "./types";
 import { fetchFolderMetadata, fetchDrivePhotos } from "./drive";
+import { auth, db } from "./firebase";
+import { collection, getDocs, setDoc, doc, onSnapshot } from "firebase/firestore";
 
 export function getAlbums(): Album[] {
   const data = localStorage.getItem("my_albums");
@@ -8,6 +10,12 @@ export function getAlbums(): Album[] {
 
 export function saveAlbums(albums: Album[]) {
   localStorage.setItem("my_albums", JSON.stringify(albums));
+  if (auth.currentUser) {
+    albums.forEach(album => {
+      setDoc(doc(db, `users/${auth.currentUser!.uid}/albums`, album.id), album, { merge: true })
+        .catch(console.error);
+    });
+  }
 }
 
 function extractFolderId(url: string): string | null {
