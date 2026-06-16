@@ -23,8 +23,16 @@ export function CollectionsView() {
     // Load initially from local storage
     setAlbums(getAlbums());
 
+    let unsubscribeSnapshot: (() => void) | undefined;
+
     const unsubscribeAuth = auth.onAuthStateChanged(newUser => {
       setUser(newUser);
+      
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = undefined;
+      }
+
       if (newUser) {
         // Sync local albums to cloud right away
         const localAlbums = getAlbums();
@@ -33,7 +41,7 @@ export function CollectionsView() {
         }
 
         const q = collection(db, `users/${newUser.uid}/albums`);
-        return onSnapshot(q, (snapshot) => {
+        unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
           const remoteAlbums = snapshot.docs.map(d => d.data() as Album);
           const currentLocal = getAlbums();
           const merged = [...currentLocal];
@@ -48,11 +56,16 @@ export function CollectionsView() {
              localStorage.setItem("my_albums", JSON.stringify(merged));
           }
           setAlbums(merged);
+        }, (err) => {
+          console.error("Snapshot error:", err);
         });
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
