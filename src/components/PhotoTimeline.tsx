@@ -90,8 +90,8 @@ export function PhotoTimeline({
       id: Math.random().toString(36).substring(7),
       type,
       content,
-      x: 0,
-      y: 0,
+      x: (Math.random() * 40) - 20,
+      y: (Math.random() * 40) - 20,
       rotation: type === 'emoji' ? (Math.random() * 20 - 10) : 0,
       scale: 1,
       fontFamily: type === 'text' ? currentFont : undefined

@@ -1,5 +1,5 @@
 {
-  "name": "Memórias",
+  "name": "Álbum Família Ferreira",
   "description": "Álbum de fotos digital que organiza automaticamente imagens do Google Drive em eventos cronológicos com títulos gerados por inteligência artificial.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
