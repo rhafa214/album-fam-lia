@@ -3,8 +3,20 @@ import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/
 import { getFirestore } from "firebase/firestore";
 import firebaseConfig from "../../firebase-applet-config.json";
 
-export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); // as needed by specific setup
+const customConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
+
+const isCustomConfig = !!customConfig.apiKey;
+const configToUse = isCustomConfig ? customConfig : firebaseConfig;
+
+export const app = initializeApp(configToUse);
+export const db = getFirestore(app, isCustomConfig ? undefined : firebaseConfig.firestoreDatabaseId); // as needed by specific setup
 export const auth = getAuth(app);
 
 export const signInWithGoogle = async () => {
