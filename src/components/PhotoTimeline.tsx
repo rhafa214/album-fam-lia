@@ -25,13 +25,17 @@ export function PhotoTimeline({
   searchQuery,
   forceOpen,
   onClearForceOpen,
-  onRefreshEvents
+  onRefreshEvents,
+  onSetChapterCover,
+  isAlbumView
 }: { 
   events: PhotoEvent[], 
   searchQuery: string,
   forceOpen?: PhotoEvent | null,
   onClearForceOpen?: () => void,
-  onRefreshEvents?: () => void
+  onRefreshEvents?: () => void,
+  onSetChapterCover?: (url: string) => void,
+  isAlbumView?: boolean
 }) {
   const [openedEvent, setOpenedEvent] = useState<PhotoEvent | null>(null);
   const [albumPageIndex, setAlbumPageIndex] = useState(0);
@@ -640,8 +644,19 @@ export function PhotoTimeline({
             eventId={openedEvent.id}
             isFavorite={(id) => favorites.includes(id)}
             onToggleFavorite={toggleFavorite}
-            isCover={(id) => coverPhotos[openedEvent.id] === id}
-            onSetCover={(id) => setCover(openedEvent.id, id)}
+            isCover={(id) => isAlbumView ? false : coverPhotos[openedEvent.id] === id}
+            onSetCover={(id) => {
+              if (isAlbumView && onSetChapterCover) {
+                const photo = lightboxData.photos.find(p => p.id === id);
+                if (photo) {
+                  const url = photo.thumbnailLink?.replace("=s220", "=s800") || photo.webContentLink || "";
+                  onSetChapterCover(url);
+                  alert("Capa atualizada com sucesso!");
+                }
+              } else {
+                setCover(openedEvent.id, id);
+              }
+            }}
           />
         )}
       </div>

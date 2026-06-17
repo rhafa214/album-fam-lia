@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Album } from "../lib/types";
 import { getAlbums, saveAlbums, addAlbumFromUrl, loadAlbumPhotos } from "../lib/albums";
-import { FolderPlus, Loader2, Image as ImageIcon, DownloadCloud } from "lucide-react";
+import { FolderPlus, Loader2, Image as ImageIcon, DownloadCloud, Edit3, X } from "lucide-react";
 import { PhotoEvent } from "../lib/types";
 import { PhotoTimeline } from "./PhotoTimeline";
 import { format } from "date-fns";
@@ -18,6 +18,11 @@ export function CollectionsView() {
   const [albumEvent, setAlbumEvent] = useState<PhotoEvent | null>(null);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [user, setUser] = useState(auth.currentUser);
+
+  const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editCoverUrl, setEditCoverUrl] = useState("");
 
   useEffect(() => {
     // Load initially from local storage
@@ -92,8 +97,8 @@ export function CollectionsView() {
       setAlbumEvent({
         id: album.id,
         title: album.title,
-        startDate: new Date(photos[photos.length - 1]?.createdTime || new Date()),
-        endDate: new Date(photos[0]?.createdTime || new Date()),
+        startDate: new Date(album.customDate || photos[photos.length - 1]?.createdTime || new Date()),
+        endDate: new Date(album.customDate || photos[0]?.createdTime || new Date()),
         photos
       });
     } catch (err) {
@@ -101,6 +106,45 @@ export function CollectionsView() {
     } finally {
       setLoadingPhotos(false);
     }
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingAlbum) return;
+    const updatedAlbums = albums.map(a => 
+      a.id === editingAlbum.id ? { 
+        ...a, 
+        title: editTitle, 
+        customDate: editDate, 
+        coverUrl: editCoverUrl 
+      } : a
+    );
+    setAlbums(updatedAlbums);
+    saveAlbums(updatedAlbums);
+    setEditingAlbum(null);
+  };
+
+  const handleDeleteAlbum = () => {
+    if (!editingAlbum) return;
+    if (window.confirm("Certeza que deseja excluir este capítulo?")) {
+      const updatedAlbums = albums.filter(a => a.id !== editingAlbum.id);
+      setAlbums(updatedAlbums);
+      saveAlbums(updatedAlbums);
+      setEditingAlbum(null);
+    }
+  };
+
+  const handleSetCoverFromTimeline = (url: string) => {
+    if (!selectedAlbum) return;
+    const updatedAlbums = albums.map(a => 
+      a.id === selectedAlbum.id ? { 
+        ...a, 
+        coverUrl: url 
+      } : a
+    );
+    setAlbums(updatedAlbums);
+    saveAlbums(updatedAlbums);
+    // Update local state so it immediately reflects if we go back
+    setSelectedAlbum({ ...selectedAlbum, coverUrl: url });
   };
 
   if (selectedAlbum) {
@@ -118,7 +162,12 @@ export function CollectionsView() {
             <p className="text-[10px] font-sans uppercase tracking-[0.2em] font-semibold text-ink-light">Sincronizando Álbum...</p>
           </div>
         ) : albumEvent ? (
-          <PhotoTimeline events={[albumEvent]} searchQuery="" />
+          <PhotoTimeline 
+            events={[albumEvent]} 
+            searchQuery="" 
+            onSetChapterCover={handleSetCoverFromTimeline}
+            isAlbumView={true}
+          />
         ) : null}
       </div>
     );
@@ -177,30 +226,48 @@ export function CollectionsView() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-16 mt-8 pb-24">
         {albums.map((album, idx) => (
-          <button 
-            key={album.id}
-            onClick={() => handleSelectAlbum(album)}
-            className="group flex flex-col text-left transition-all duration-500 hover:scale-[1.02] cursor-pointer"
-            style={{ rotate: `${(idx % 2 === 0 ? '-1deg' : '1deg')}` }}
-          >
-            <div className="w-full aspect-[4/5] bg-paper-dark border-[12px] border-white relative overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
-              <div className="absolute inset-0 flex items-center justify-center text-ink/5 group-hover:text-ink/10 transition-colors">
-                <ImageIcon className="w-24 h-24" />
+          <div key={album.id} className="relative group flex flex-col text-left transition-all duration-500 hover:scale-[1.02]" style={{ rotate: `${(idx % 2 === 0 ? '-1deg' : '1deg')}` }}>
+            <button 
+              onClick={() => handleSelectAlbum(album)}
+              className="peer cursor-pointer w-full text-left"
+            >
+              <div className="w-full aspect-[4/5] bg-paper-dark border-[12px] border-white relative overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
+                {album.coverUrl ? (
+                  <img src={album.coverUrl} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-ink/5 group-hover:text-ink/10 transition-colors">
+                    <ImageIcon className="w-24 h-24" />
+                  </div>
+                )}
               </div>
-            </div>
-            
-            <div className="mt-6 text-center space-y-1 h-32">
-              <p className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-ink-light">
-                {format(new Date(album.addedAt), "yyyy", { locale: ptBR })}
-              </p>
-              <h3 className="text-xl font-serif text-ink tracking-tight uppercase group-hover:text-terracotta transition-colors leading-tight">
-                {album.title}
-              </h3>
-              <p className="font-handwriting text-ink/60 text-xl italic mt-2">
-                "Um dia para lembrar."
-              </p>
-            </div>
-          </button>
+              
+              <div className="mt-6 text-center space-y-1 h-32 px-4">
+                <p className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-ink-light">
+                  {album.customDate ? format(new Date(album.customDate), "MMMM yyyy", { locale: ptBR }) : format(new Date(album.addedAt), "yyyy", { locale: ptBR })}
+                </p>
+                <h3 className="text-xl font-serif text-ink tracking-tight uppercase group-hover:text-terracotta transition-colors leading-tight">
+                  {album.title}
+                </h3>
+                <p className="font-handwriting text-ink/60 text-xl italic mt-2">
+                  "Um dia para lembrar."
+                </p>
+              </div>
+            </button>
+
+            {/* Edit button superimposed over the card */}
+            <button
+              onClick={() => {
+                setEditingAlbum(album);
+                setEditTitle(album.title);
+                setEditDate(album.customDate || album.addedAt.split('T')[0]);
+                setEditCoverUrl(album.coverUrl || "");
+              }}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-sm text-ink/50 hover:text-ink cursor-pointer"
+              title="Editar Capítulo"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+          </div>
         ))}
         {albums.length === 0 && (
           <div className="col-span-full py-20 text-center text-[10px] font-sans uppercase tracking-[0.2em] font-semibold text-ink-light border border-dashed border-ink/20 rounded-xl">
@@ -208,6 +275,64 @@ export function CollectionsView() {
           </div>
         )}
       </div>
+
+      {editingAlbum && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-paper p-8 border border-ink/10 max-w-sm w-full shadow-2xl relative">
+            <button onClick={() => setEditingAlbum(null)} className="absolute top-4 right-4 text-ink-light hover:text-ink p-2">
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="font-serif text-2xl mb-6 text-ink">Editar Capítulo</h3>
+            
+            <div className="space-y-4 mb-8">
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-ink-light mb-1 block">Título do Capítulo</label>
+                <input 
+                  type="text" 
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full bg-transparent border-b border-ink/20 px-2 py-2 text-sm font-sans text-ink focus:outline-none focus:border-ink transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-ink-light mb-1 block">Data Base (Mês/Ano)</label>
+                <input 
+                  type="date" 
+                  value={editDate ? editDate.split('T')[0] : ''}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-full bg-transparent border-b border-ink/20 px-2 py-2 text-sm font-sans text-ink focus:outline-none focus:border-ink transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-ink-light mb-1 block">URL da Capa (Opcional)</label>
+                <input 
+                  type="url" 
+                  value={editCoverUrl}
+                  onChange={(e) => setEditCoverUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full bg-transparent border-b border-ink/20 px-2 py-2 text-sm font-sans text-ink focus:outline-none focus:border-ink transition-colors"
+                />
+                <p className="text-[10px] text-ink-light/70 mt-2 font-mono">Dica: abra o capítulo e use o botão de capa nas fotos para preencher isso automaticamente.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 justify-between items-center">
+              <button 
+                onClick={handleDeleteAlbum} 
+                className="text-[10px] uppercase font-bold tracking-widest text-terracotta hover:text-red-700 transition-colors"
+              >
+                Excluir
+              </button>
+              <div className="flex gap-4">
+                <button onClick={() => setEditingAlbum(null)} className="text-xs uppercase font-bold tracking-widest text-ink-light hover:text-ink">Cancelar</button>
+                <button onClick={handleSaveEdit} className="text-xs uppercase font-bold tracking-widest text-ink hover:text-terracotta transition-colors">Salvar Alterações</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

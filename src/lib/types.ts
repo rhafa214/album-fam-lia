@@ -12,4 +12,6 @@ export interface Album {
   id: string; // The drive folder ID
   title: string;
   addedAt: string;
+  coverUrl?: string;
+  customDate?: string;
 }
